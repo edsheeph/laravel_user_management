@@ -9,7 +9,7 @@ use Illuminate\Http\Request;
 
 class AuthController extends Controller
 {
-    public function signup(Request $request){
+    public function register (Request $request) {
         $request->validate([
             'name' => 'required',
             'email' => 'required|string|unique:users',
@@ -31,7 +31,7 @@ class AuthController extends Controller
             ->generate();
     }
 
-    public function login(Request $request){
+    public function login (Request $request) {
         $request->validate([
             'email' => 'required|string|email',
             'password' => 'required|string',
@@ -55,7 +55,7 @@ class AuthController extends Controller
         if ($request->remember_me) {
             $token->expires_at = Carbon::now()->addWeeks(1);
         }
-            
+
         $token->save();
 
         return customResponse()
@@ -72,7 +72,7 @@ class AuthController extends Controller
             ->generate();
     }
 
-    public function logout(Request $request){
+    public function logout (Request $request) {
         $request->user()->token()->revoke();
         return customResponse()
             ->message('Successfully logged out!')
@@ -81,7 +81,7 @@ class AuthController extends Controller
             ->generate();
     }
 
-    public function user(Request $request){
+    public function user (Request $request) {
         $userData = $request->user();
         return customResponse()
             ->message('Success in Getting User.')
