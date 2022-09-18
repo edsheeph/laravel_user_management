@@ -8,7 +8,10 @@ use Carbon\Carbon;
 
 use Illuminate\Http\Request;
 
+use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\UserRole;
+use App\Models\UserSession;
 
 class AuthController extends Controller
 {
@@ -30,10 +33,18 @@ class AuthController extends Controller
         $user = new User([
             'name' => $request->name,
             'email' => $request->email,
+            'user_role_id' => UserRole::APPLICANT,
             'password' => bcrypt($request->password)
         ]);
 
         $user->save();
+
+        $this->logActivity(
+            $user->id,
+            'Register',
+            'Register Account',
+            'Successfully created user!'
+        );
 
         return customResponse()
             ->message('Successfully created user!')
@@ -77,6 +88,22 @@ class AuthController extends Controller
 
         $token->save();
 
+        $userSession = UserSession::where("user_id", $user->id)->first();
+        if (empty($userSession)) {
+            $userSession = new UserSession;
+        }
+        $userSession->user_id = $user->id;
+        $userSession->access_token = $tokenResult->accessToken;
+        $userSession->ip_address = $request->ip();
+        $userSession->save();
+
+        $this->logActivity(
+            $user->id,
+            'Login',
+            'Login Account',
+            'Successfully logged in!'
+        );
+
         return customResponse()
             ->message('Successfully logged in!')
             ->data([
@@ -92,7 +119,15 @@ class AuthController extends Controller
     }
 
     public function logout (Request $request) {
+        $this->logActivity(
+            $request->user()->id,
+            'Logout',
+            'Logout Account',
+            'Successfully logged out!'
+        );
+
         $request->user()->token()->revoke();
+
         return customResponse()
             ->message('Successfully logged out!')
             ->data(null)
@@ -102,6 +137,9 @@ class AuthController extends Controller
 
     public function user (Request $request) {
         $user = $request->user();
+        $userRole = $user->userRole;
+        $userSession = $user->userSession;
+
         return customResponse()
             ->message('Success in Getting User.')
             ->data($user)
